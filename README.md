@@ -1,10 +1,14 @@
 # WeChatTweak
 
-[![README](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
-[![README](https://img.shields.io/badge/Telegram-black?logo=telegram&logoColor=white)](https://t.me/wechattweak)
-[![README](https://img.shields.io/badge/FAQ-black?logo=googledocs&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak/wiki/FAQ)
+[![GitHub](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
+[![Telegram](https://img.shields.io/badge/Telegram-black?logo=telegram&logoColor=white)](https://t.me/wechattweak)
+[![FAQ](https://img.shields.io/badge/FAQ-black?logo=googledocs&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak/wiki/FAQ)
+[![WeChat](https://img.shields.io/badge/WeChat-4.1.11-07C160)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
+[![Platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 
-A command-line tool for tweaking WeChat.
+用于修改微信 macOS 客户端的命令行工具。
+
+当前已适配微信 macOS **4.1.11**（内部版本 `269136`）。
 
 ## 功能
 
@@ -12,21 +16,49 @@ A command-line tool for tweaking WeChat.
 - 阻止自动更新
 - 客户端多开
 
-## 安装&使用
+## 环境要求
+
+- Apple Silicon Mac（`arm64`）
+- macOS 12 或更高版本
+- 已安装微信 macOS 客户端
+
+## 安装
 
 ```bash
-# 安装（Apple Silicon）
 brew install kong-kyle/tap/wechattweak
+```
 
-# 更新
-brew update
-brew upgrade wechattweak
+## 使用
 
-# 执行 Patch
+请先完全退出微信，再执行 Patch：
+
+```bash
+# 执行 Patch，默认处理 /Applications/WeChat.app
 wechattweak patch
 
-# 查看所有支持的 WeChat 版本
+# 查看当前版本和所有支持的内部版本
 wechattweak versions
+```
+
+如果微信安装在其他位置，可以通过 `--app` 指定应用路径：
+
+```bash
+wechattweak patch --app "/path/to/WeChat.app"
+```
+
+## 支持版本
+
+| 微信 macOS 版本 | 内部版本 | 状态 |
+| --- | --- | --- |
+| 4.1.11 | `269136` | 已适配 |
+
+Patch 时程序会根据微信的内部版本匹配配置。微信升级后，如果提示 `Unsupported WeChat version`，请先运行 `wechattweak versions` 确认版本，再等待项目更新补丁配置。
+
+## 更新
+
+```bash
+brew update
+brew upgrade wechattweak
 ```
 
 ## 参考
