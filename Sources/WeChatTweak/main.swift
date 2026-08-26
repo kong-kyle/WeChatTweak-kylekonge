@@ -113,7 +113,8 @@ struct Tweak: AsyncParsableCommand {
                 }
             }
         )
-        var config: URL = URL(string:"https://raw.githubusercontent.com/kong-kyle/WeChatTweak-kylekonge/refs/heads/master/config.json")!
+        // Pin the default config to an immutable release commit so branch updates cannot alter patch bytes unexpectedly.
+        var config: URL = URL(string: "https://raw.githubusercontent.com/kong-kyle/WeChatTweak-kylekonge/5a6d9f804bb9a1a5bb5a8631320f17d81bcfba11/config.json")!
     }
 
     static let configuration = CommandConfiguration(
