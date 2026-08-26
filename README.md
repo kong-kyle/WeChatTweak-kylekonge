@@ -15,10 +15,11 @@ A command-line tool for tweaking WeChat.
 ## 安装&使用
 
 ```bash
-# 安装
-brew install kylekonge/tap/wechattweak
+# 安装（Apple Silicon）
+brew install kong-kyle/tap/wechattweak
 
 # 更新
+brew update
 brew upgrade wechattweak
 
 # 执行 Patch
