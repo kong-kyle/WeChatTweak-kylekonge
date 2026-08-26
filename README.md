@@ -1,6 +1,6 @@
 # WeChatTweak
 
-[![README](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak)
+[![README](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 [![README](https://img.shields.io/badge/Telegram-black?logo=telegram&logoColor=white)](https://t.me/wechattweak)
 [![README](https://img.shields.io/badge/FAQ-black?logo=googledocs&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak/wiki/FAQ)
 
@@ -16,7 +16,7 @@ A command-line tool for tweaking WeChat.
 
 ```bash
 # 安装
-brew install sunnyyoung/tap/wechattweak
+brew install kylekonge/tap/wechattweak
 
 # 更新
 brew upgrade wechattweak
@@ -38,7 +38,7 @@ wechattweak versions
 
 This project exists thanks to all the people who contribute.
 
-[![Contributors](https://contrib.rocks/image?repo=sunnyyoung/WeChatTweak)](https://github.com/sunnyyoung/WeChatTweak/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=kong-kyle/WeChatTweak-kylekonge)](https://github.com/kong-kyle/WeChatTweak-kylekonge/graphs/contributors)
 
 ## License
 

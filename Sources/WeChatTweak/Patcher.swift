@@ -15,14 +15,15 @@ struct Patcher {
         case not64BitMachO(magic: UInt32)
         case vaNotFound(arch: String, va: UInt64)
         case noArchMatched
+        case expectedMismatch(arch: String, va: UInt64)
     }
 
-    static func patch(binary: URL, config: Config) throws {
+    static func patch(binary: URL, targets: [Config.Target]) throws {
         guard FileManager.default.fileExists(atPath: binary.path) else {
             throw Error.invalidFile
         }
 
-        let entries = config.targets.flatMap { $0.entries }
+        let entries = targets.flatMap { $0.entries }
         guard !entries.isEmpty else { throw Error.noArchMatched }
 
         let fh = try FileHandle(forUpdating: binary)
@@ -66,6 +67,7 @@ struct Patcher {
                                       sliceOffset: UInt64(entry.offset),
                                       targetVA: target.addr,
                                       patch: target.asm,
+                                      expected: target.expected,
                                       archName: target.arch.rawValue)
                     patchedCount += 1
                 }
@@ -93,6 +95,7 @@ struct Patcher {
                                   sliceOffset: 0,
                                   targetVA: target.addr,
                                   patch: target.asm,
+                                  expected: target.expected,
                                   archName: target.arch.rawValue)
                 patchedCount += 1
             }
@@ -107,6 +110,7 @@ struct Patcher {
                                       sliceOffset: UInt64,
                                       targetVA: UInt64,
                                       patch: Data,
+                                      expected: Data?,
                                       archName: String) throws {
 
         // 读 slice 内 mach_header_64
@@ -146,6 +150,13 @@ struct Patcher {
                     let fileOffset = sliceOffset + fileoff + (targetVA - vmaddr)
                     print("[\(archName)] vmaddr=\(String(format: "0x%llx", vmaddr)), fileoff=\(String(format: "0x%llx", fileoff)), sliceoff=\(String(format: "0x%llx", sliceOffset))")
                     print("[\(archName)] patch VA=\(String(format: "0x%llx", targetVA)), fileoff=\(String(format: "0x%llx", fileOffset))")
+
+                    if let expected = expected {
+                        try fh.seek(toOffset: fileOffset)
+                        guard let original = try fh.read(upToCount: expected.count), original == expected else {
+                            throw Error.expectedMismatch(arch: archName, va: targetVA)
+                        }
+                    }
 
                     try fh.seek(toOffset: fileOffset)
                     try fh.write(contentsOf: patch)

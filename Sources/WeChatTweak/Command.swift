@@ -24,7 +24,16 @@ struct Command {
     }
 
     static func patch(app: URL, config: Config) async throws {
-        try Patcher.patch(binary: app.appendingPathComponent("Contents/MacOS/WeChat"), config: config)
+        let grouped = Dictionary(grouping: config.targets, by: { $0.binary })
+        for (binary, targets) in grouped {
+            let binaryURL = app.appendingPathComponent(binary)
+            try Patcher.patch(binary: binaryURL, targets: targets)
+            // Re-sign the patched binary so its own code signature matches the
+            // new bytes. App-level `codesign --deep` does NOT re-sign standalone
+            // dylibs under Resources (e.g. wechat.dylib), which would otherwise
+            // crash WeChat at launch with "Code Signature Invalid / Invalid Page".
+            try await Command.execute(command: "codesign --force --sign - \(binaryURL.path)")
+        }
     }
 
     static func resign(app: URL) async throws {

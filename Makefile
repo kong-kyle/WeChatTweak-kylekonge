@@ -1,8 +1,8 @@
 .PHONY: build clean
 
 build::
-	swift build -c release --arch arm64 --arch x86_64
-	cp -f .build/apple/Products/Release/wechattweak ./wechattweak
+	swift build -c release --arch arm64
+	cp -f .build/release/wechattweak ./wechattweak
 
 clean::
 	rm -rf .build

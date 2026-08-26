@@ -27,11 +27,13 @@ struct Config: Decodable {
         let arch: Arch
         let addr: UInt64
         let asm: Data
+        let expected: Data?
 
         private enum CodingKeys: CodingKey {
             case arch
             case addr
             case asm
+            case expected
         }
 
         init(from decoder: any Decoder) throws {
@@ -59,22 +61,40 @@ struct Config: Decodable {
                 }
                 return value
             }()
+            self.expected = try {
+                guard let hex = try container.decodeIfPresent(String.self, forKey: .expected) else {
+                    return nil
+                }
+                guard let value = Data(hex: hex) else {
+                    throw DecodingError.dataCorruptedError(
+                        forKey: CodingKeys.expected,
+                        in: container,
+                        debugDescription: "Invalid Entry.expected"
+                    )
+                }
+                return value
+            }()
         }
     }
 
     struct Target: Decodable {
+        static let defaultBinary = "Contents/MacOS/WeChat"
+
         let identifier: String
         let entries: [Entry]
+        let binary: String
 
         private enum CodingKeys: CodingKey {
             case identifier
             case entries
+            case binary
         }
 
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.identifier = try container.decode(String.self, forKey: .identifier)
             self.entries = try container.decode([Entry].self, forKey: .entries)
+            self.binary = try container.decodeIfPresent(String.self, forKey: .binary) ?? Target.defaultBinary
         }
     }
 
