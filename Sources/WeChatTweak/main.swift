@@ -101,7 +101,7 @@ struct Tweak: AsyncParsableCommand {
 
         @Option(
             name: .shortAndLong,
-            help: "Local path or Remote URL of config.json",
+            help: "Local path or the pinned release URL of config.json",
             transform: {
                 if FileManager.default.fileExists(atPath: $0) {
                     return URL(fileURLWithPath: $0)
@@ -109,12 +109,15 @@ struct Tweak: AsyncParsableCommand {
                     guard let url = URL(string: $0) else {
                         throw Error.invalidConfig
                     }
+                    guard url == Config.defaultURL else {
+                        throw Error.invalidConfig
+                    }
                     return url
                 }
             }
         )
-        // Pin the default config to an immutable release commit so branch updates cannot alter patch bytes unexpectedly.
-        var config: URL = URL(string: "https://raw.githubusercontent.com/kong-kyle/WeChatTweak-kylekonge/5a6d9f804bb9a1a5bb5a8631320f17d81bcfba11/config.json")!
+        // The URL and payload digest are verified before any binary is modified.
+        var config: URL = Config.defaultURL
     }
 
     static let configuration = CommandConfiguration(

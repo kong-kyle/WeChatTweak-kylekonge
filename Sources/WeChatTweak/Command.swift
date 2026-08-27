@@ -10,11 +10,14 @@ import ArgumentParser
 struct Command {
     enum Error: Swift.Error, LocalizedError {
         case executing(command: String, error: String)
+        case invalidBinaryPath(String)
 
         var errorDescription: String? {
             switch self {
             case let .executing(command, error):
                 return "executing: \(command) error: \(error)"
+            case let .invalidBinaryPath(path):
+                return "Invalid target binary path: \(path)"
             }
         }
     }
@@ -33,7 +36,7 @@ struct Command {
     static func patch(app: URL, config: Config) async throws {
         let grouped = Dictionary(grouping: config.targets, by: { $0.binary })
         for (binary, targets) in grouped {
-            let binaryURL = app.appendingPathComponent(binary)
+            let binaryURL = try targetURL(app: app, relativePath: binary)
             try Patcher.patch(binary: binaryURL, targets: targets)
             // Re-sign the patched binary so its own code signature matches the
             // new bytes. App-level `codesign --deep` does NOT re-sign standalone
@@ -55,10 +58,22 @@ struct Command {
             executable: "/usr/bin/codesign",
             arguments: ["--force", "--deep", "--sign", "-", app.path]
         )
-        try await Command.execute(
-            executable: "/usr/bin/xattr",
-            arguments: ["-cr", app.path]
-        )
+        // Keep quarantine and provenance metadata so patching does not bypass Gatekeeper.
+    }
+
+    private static func targetURL(app: URL, relativePath: String) throws -> URL {
+        let appRoot = app.resolvingSymlinksInPath().standardizedFileURL
+        let target = appRoot
+            .appendingPathComponent(relativePath)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+        let rootPath = appRoot.path.hasSuffix("/") ? appRoot.path : appRoot.path + "/"
+
+        guard target.path.hasPrefix(rootPath) else {
+            throw Error.invalidBinaryPath(relativePath)
+        }
+        return target
     }
 
     @discardableResult

@@ -16,6 +16,7 @@ struct Patcher {
         case vaNotFound(arch: String, va: UInt64)
         case noArchMatched
         case expectedMismatch(arch: String, va: UInt64)
+        case patchOutOfBounds(arch: String, va: UInt64)
     }
 
     static func patch(binary: URL, targets: [Config.Target]) throws {
@@ -46,7 +47,7 @@ struct Patcher {
             let nfat = isSwappedFat ? UInt32(littleEndian: rawNfat) : UInt32(bigEndian: rawNfat)
 
             // 先读完 fat_arch 表，避免 patch 时移动文件指针影响后续读取
-            var archEntries: [(cputype: UInt32, offset: UInt32)] = []
+            var archEntries: [(cputype: UInt32, offset: UInt32, size: UInt32)] = []
 
             for _ in 0..<nfat {
                 // fat_arch: cputype(4) cpusub(4) offset(4) size(4) align(4) big-endian
@@ -55,9 +56,11 @@ struct Patcher {
                 }
                 let rawCpu = archData.withUnsafeBytes { $0.load(fromByteOffset: 0, as: UInt32.self) }
                 let rawOff = archData.withUnsafeBytes { $0.load(fromByteOffset: 8, as: UInt32.self) }
+                let rawSize = archData.withUnsafeBytes { $0.load(fromByteOffset: 12, as: UInt32.self) }
                 let cputype = isSwappedFat ? UInt32(littleEndian: rawCpu) : UInt32(bigEndian: rawCpu)
                 let offset  = isSwappedFat ? UInt32(littleEndian: rawOff) : UInt32(bigEndian: rawOff)
-                archEntries.append((cputype, offset))
+                let size    = isSwappedFat ? UInt32(littleEndian: rawSize) : UInt32(bigEndian: rawSize)
+                archEntries.append((cputype, offset, size))
             }
 
             for entry in archEntries {
@@ -65,6 +68,7 @@ struct Patcher {
                 for target in matching {
                     try patchOneSlice(file: fh,
                                       sliceOffset: UInt64(entry.offset),
+                                      sliceSize: UInt64(entry.size),
                                       targetVA: target.addr,
                                       patch: target.asm,
                                       expected: target.expected,
@@ -93,6 +97,7 @@ struct Patcher {
             for target in matching {
                 try patchOneSlice(file: fh,
                                   sliceOffset: 0,
+                                  sliceSize: nil,
                                   targetVA: target.addr,
                                   patch: target.asm,
                                   expected: target.expected,
@@ -108,10 +113,28 @@ struct Patcher {
 
     private static func patchOneSlice(file fh: FileHandle,
                                       sliceOffset: UInt64,
+                                      sliceSize: UInt64?,
                                       targetVA: UInt64,
                                       patch: Data,
                                       expected: Data?,
                                       archName: String) throws {
+
+        let fileLength = try fh.seekToEnd()
+        let sliceEnd: UInt64
+        if let sliceSize {
+            let sliceEndResult = sliceOffset.addingReportingOverflow(sliceSize)
+            guard !sliceEndResult.overflow, sliceEndResult.partialValue <= fileLength else {
+                throw Error.invalidFile
+            }
+            sliceEnd = sliceEndResult.partialValue
+        } else {
+            guard sliceOffset <= fileLength else { throw Error.invalidFile }
+            sliceEnd = fileLength
+        }
+        let sliceLength = sliceEnd - sliceOffset
+
+        // Keep malformed load commands from being read across a FAT slice boundary.
+        guard sliceLength >= 32 else { throw Error.invalidFile }
 
         // 读 slice 内 mach_header_64
         try fh.seek(toOffset: sliceOffset)
@@ -129,6 +152,9 @@ struct Patcher {
         var lcOffset = sliceOffset + 32
 
         for _ in 0..<ncmds {
+            guard lcOffset <= sliceEnd, sliceEnd - lcOffset >= 8 else {
+                throw Error.invalidFile
+            }
             try fh.seek(toOffset: lcOffset)
             guard let lcHead = try fh.read(upToCount: 8), lcHead.count == 8 else {
                 throw Error.invalidFile
@@ -136,8 +162,17 @@ struct Patcher {
 
             let cmd     = lcHead.withUnsafeBytes { $0.load(as: UInt32.self).littleEndian }
             let cmdsize = lcHead.withUnsafeBytes { $0.load(fromByteOffset: 4, as: UInt32.self).littleEndian }
+            guard cmdsize >= 8 else {
+                throw Error.invalidFile
+            }
+            guard UInt64(cmdsize) <= sliceEnd - lcOffset else {
+                throw Error.invalidFile
+            }
 
             if cmd == LC_SEGMENT_64 {
+                guard cmdsize >= 72 else {
+                    throw Error.invalidFile
+                }
                 guard let segData = try fh.read(upToCount: 64), segData.count == 64 else {
                     throw Error.invalidFile
                 }
@@ -145,9 +180,42 @@ struct Patcher {
                 let vmaddr  = segData.withUnsafeBytes { $0.load(fromByteOffset: 16, as: UInt64.self).littleEndian }
                 let vmsize  = segData.withUnsafeBytes { $0.load(fromByteOffset: 24, as: UInt64.self).littleEndian }
                 let fileoff = segData.withUnsafeBytes { $0.load(fromByteOffset: 32, as: UInt64.self).littleEndian }
+                let filesize = segData.withUnsafeBytes { $0.load(fromByteOffset: 40, as: UInt64.self).littleEndian }
 
-                if vmaddr <= targetVA && targetVA < vmaddr + vmsize {
-                    let fileOffset = sliceOffset + fileoff + (targetVA - vmaddr)
+                if targetVA >= vmaddr {
+                    let virtualOffset = targetVA - vmaddr
+                    guard virtualOffset < vmsize else {
+                        continue
+                    }
+
+                    let patchLength = UInt64(patch.count)
+                    guard virtualOffset < filesize,
+                          patchLength <= filesize - virtualOffset else {
+                        throw Error.patchOutOfBounds(arch: archName, va: targetVA)
+                    }
+
+                    let fileOffsetInSliceResult = fileoff.addingReportingOverflow(virtualOffset)
+                    guard !fileOffsetInSliceResult.overflow else {
+                        throw Error.patchOutOfBounds(arch: archName, va: targetVA)
+                    }
+                    let fileOffsetInSlice = fileOffsetInSliceResult.partialValue
+                    let patchEndInSliceResult = fileOffsetInSlice.addingReportingOverflow(patchLength)
+                    guard !patchEndInSliceResult.overflow,
+                          patchEndInSliceResult.partialValue <= sliceLength else {
+                        throw Error.patchOutOfBounds(arch: archName, va: targetVA)
+                    }
+
+                    let fileOffsetResult = sliceOffset.addingReportingOverflow(fileOffsetInSlice)
+                    guard !fileOffsetResult.overflow else {
+                        throw Error.patchOutOfBounds(arch: archName, va: targetVA)
+                    }
+                    let fileOffset = fileOffsetResult.partialValue
+                    let patchEndResult = fileOffset.addingReportingOverflow(patchLength)
+                    guard !patchEndResult.overflow,
+                          patchEndResult.partialValue <= fileLength else {
+                        throw Error.patchOutOfBounds(arch: archName, va: targetVA)
+                    }
+
                     print("[\(archName)] vmaddr=\(String(format: "0x%llx", vmaddr)), fileoff=\(String(format: "0x%llx", fileoff)), sliceoff=\(String(format: "0x%llx", sliceOffset))")
                     print("[\(archName)] patch VA=\(String(format: "0x%llx", targetVA)), fileoff=\(String(format: "0x%llx", fileOffset))")
 
@@ -164,7 +232,11 @@ struct Patcher {
                 }
             }
 
-            lcOffset += UInt64(cmdsize)
+            let nextLoadCommandOffset = lcOffset.addingReportingOverflow(UInt64(cmdsize))
+            guard !nextLoadCommandOffset.overflow else {
+                throw Error.invalidFile
+            }
+            lcOffset = nextLoadCommandOffset.partialValue
         }
 
         throw Error.vaNotFound(arch: archName, va: targetVA)
