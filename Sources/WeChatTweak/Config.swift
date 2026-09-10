@@ -31,8 +31,8 @@ struct Config: Decodable {
     }
 
     // Keeping the URL and digest together prevents a branch update from changing patch bytes silently.
-    static let defaultURL = URL(string: "https://raw.githubusercontent.com/kong-kyle/WeChatTweak-kylekonge/5a6d9f804bb9a1a5bb5a8631320f17d81bcfba11/config.json")!
-    private static let defaultSHA256 = "6c64e80b22e33878933b698dd4beeee6747f41a468a74a35670807deb7e40f2c"
+    static let defaultURL = URL(string: "https://raw.githubusercontent.com/kong-kyle/WeChatTweak-kylekonge/fdd7125a40d81824df9c95537149b86ca135eeae/config.json")!
+    private static let defaultSHA256 = "028121214bc50b72889f1cbc073b30b86a804d64569e3a2a938383c6d196632b"
     private static let maxConfigBytes = 1024 * 1024
 
     enum Arch: String, Decodable {
