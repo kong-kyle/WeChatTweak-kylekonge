@@ -3,12 +3,12 @@
 [![GitHub](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 [![Telegram](https://img.shields.io/badge/Telegram-black?logo=telegram&logoColor=white)](https://t.me/wechattweak)
 [![FAQ](https://img.shields.io/badge/FAQ-black?logo=googledocs&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak/wiki/FAQ)
-[![WeChat](https://img.shields.io/badge/WeChat-4.1.11-07C160)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
+[![WeChat](https://img.shields.io/badge/WeChat-4.1.13-07C160)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 [![Platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 
 用于修改微信 macOS 客户端的命令行工具。
 
-当前已适配微信 macOS **4.1.11**（内部版本 `269136`）。
+当前已适配微信 macOS **4.1.13**（内部版本 `269602`）与 **4.1.11**（内部版本 `269136`）。
 
 ## 功能
 
@@ -50,6 +50,7 @@ wechattweak patch --app "/path/to/WeChat.app"
 
 | 微信 macOS 版本 | 内部版本 | 状态 |
 | --- | --- | --- |
+| 4.1.13 | `269602` | 已适配 |
 | 4.1.11 | `269136` | 已适配 |
 
 Patch 时程序会根据微信的内部版本匹配配置。微信升级后，如果提示 `Unsupported WeChat version`，请先运行 `wechattweak versions` 确认版本，再等待项目更新补丁配置。
