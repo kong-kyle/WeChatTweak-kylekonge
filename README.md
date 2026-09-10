@@ -1,7 +1,6 @@
 # WeChatTweak
 
 [![GitHub](https://img.shields.io/badge/GitHub-black?logo=github&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
-[![Telegram](https://img.shields.io/badge/Telegram-black?logo=telegram&logoColor=white)](https://t.me/wechattweak)
 [![FAQ](https://img.shields.io/badge/FAQ-black?logo=googledocs&logoColor=white)](https://github.com/sunnyyoung/WeChatTweak/wiki/FAQ)
 [![WeChat](https://img.shields.io/badge/WeChat-4.1.13-07C160)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
 [![Platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-111111?logo=apple&logoColor=white)](https://github.com/kong-kyle/WeChatTweak-kylekonge)
