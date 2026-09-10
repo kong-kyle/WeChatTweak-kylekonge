@@ -52,14 +52,18 @@ wechattweak patch --app "/path/to/WeChat.app"
 | 4.1.13 | `269602` | 已适配 |
 | 4.1.11 | `269136` | 已适配 |
 
-Patch 时程序会根据微信的内部版本匹配配置。微信升级后，如果提示 `Unsupported WeChat version`，请先运行 `wechattweak versions` 确认版本，再等待项目更新补丁配置。
+Patch 时程序会根据微信的内部版本匹配配置。微信升级后，如果提示 `Unsupported WeChat version`，请先运行 `wechattweak versions` 确认版本，再等待项目发布支持该版本的新 Release。
 
 ## 更新
 
 ```bash
 brew update
-brew upgrade wechattweak
+brew upgrade kong-kyle/tap/wechattweak
 ```
+
+写成完全限定的名字，避免本机同时装了其他提供同名 formula 的 tap 时报 `Formulae found in multiple taps`。
+
+补丁配置的地址与摘要是在构建时固定进二进制的，因此配置更新需要通过新的 Release 分发。只运行 `brew upgrade` 不会带来新的版本适配。
 
 ## 参考
 
